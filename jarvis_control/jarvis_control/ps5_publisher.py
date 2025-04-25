@@ -43,15 +43,35 @@ class PS5Publisher(Node):
 
     def controller_loop(self):
         while rclpy.ok():
-            for event in pygame.event.get():
-                if event.type == pygame.JOYAXISMOTION:
-                    self.update_speeds()
+            try:
+                for event in pygame.event.get():
+                    if event.type == pygame.JOYAXISMOTION:
+                        self.update_speeds()
+            except pygame.error:
+                self.get_logger().warn("Controller disconnected. Waiting for reconnection...")
+                self.reconnect_controller()
+
             time.sleep(0.01)
 
+    def reconnect_controller(self):
+        self.controller.quit()
+        pygame.joystick.quit()
+        time.sleep(1)
+
+        while pygame.joystick.get_count() == 0:
+            pygame.joystick.quit()
+            pygame.joystick.init()
+            time.sleep(2)
+            self.get_logger().warn("Still waiting for controller...")
+
+        self.controller = pygame.joystick.Joystick(0)
+        self.controller.init()
+        self.get_logger().info(f"Reconnected to: {self.controller.get_name()}")
+
     def update_speeds(self):
-        rx = self.scale_input(self.controller.get_axis(0))          # Left stick X
-        ly = self.scale_input(-self.controller.get_axis(1))         # Left stick Y (inverted)
-        lx = self.scale_input(self.controller.get_axis(3))         # Right stick X (rotation, inverted)
+        rx = self.scale_input(self.controller.get_axis(0))          # Left stick X = turn
+        ly = self.scale_input(-self.controller.get_axis(1))         # Left stick Y = forward/back
+        lx = self.scale_input(self.controller.get_axis(3))          # Right stick X = crab walk
 
         with self.lock:
             if lx == 0 and ly == 0 and rx == 0:
@@ -73,7 +93,6 @@ class PS5Publisher(Node):
             msg.speed_bl = self.target_BL
             msg.speed_br = self.target_BR
         self.publisher_.publish(msg)
-        self.get_logger().info(f"FL: {msg.speed_fl}, FR: {msg.speed_fr}, BL: {msg.speed_bl}, BR: {msg.speed_br}")
 
 def main(args=None):
     rclpy.init(args=args)
@@ -84,3 +103,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
