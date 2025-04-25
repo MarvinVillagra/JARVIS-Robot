@@ -8,27 +8,24 @@ import time
 class PS5Publisher(Node):
     def __init__(self):
         super().__init__('ps5_publisher')
-        print("DEBUG: PS5Publisher node initializing...")
+        rclpy.logging.set_logger_level('ps5_publisher', rclpy.logging.LoggingSeverity.INFO)
 
         self.publisher_ = self.create_publisher(MotorPwm, 'motor_pwm', 10)
-        print("DEBUG: Publisher created")
-
         self.timer = self.create_timer(0.05, self.publish_pwm)
-        print("DEBUG: Timer created")
 
         pygame.init()
         pygame.joystick.init()
-        print("DEBUG: Pygame initialized")
 
+        # Wait until a controller is detected
         while pygame.joystick.get_count() == 0:
-            print("DEBUG: Waiting for PS5 controller...")
+            self.get_logger().warn("Waiting for PS5 controller...")
             pygame.joystick.quit()
             pygame.joystick.init()
             time.sleep(2)
 
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
-        print(f"DEBUG: Connected to: {self.controller.get_name()}")
+        self.get_logger().info(f"Connected to: {self.controller.get_name()}")
 
         self.deadzone = 0.13
         self.max_speed = 3000
@@ -40,7 +37,6 @@ class PS5Publisher(Node):
 
         self.input_thread = threading.Thread(target=self.controller_loop, daemon=True)
         self.input_thread.start()
-        print("DEBUG: Controller loop started")
 
     def scale_input(self, value):
         return 0 if abs(value) < self.deadzone else int(value * self.max_speed)
@@ -53,15 +49,21 @@ class PS5Publisher(Node):
             time.sleep(0.01)
 
     def update_speeds(self):
-        lx = self.scale_input(self.controller.get_axis(0))
-        ly = self.scale_input(-self.controller.get_axis(1))
-        rx = self.scale_input(-self.controller.get_axis(3))
+        rx = self.scale_input(self.controller.get_axis(0))          # Left stick X
+        ly = self.scale_input(-self.controller.get_axis(1))         # Left stick Y (inverted)
+        lx = self.scale_input(self.controller.get_axis(3))         # Right stick X (rotation, inverted)
 
         with self.lock:
-            self.target_FL = ly + lx - rx
-            self.target_FR = ly - lx + rx
-            self.target_BL = ly - lx - rx
-            self.target_BR = ly + lx + rx
+            if lx == 0 and ly == 0 and rx == 0:
+                self.target_FL = 0
+                self.target_FR = 0
+                self.target_BL = 0
+                self.target_BR = 0
+            else:
+                self.target_FL = ly + lx - rx
+                self.target_FR = ly - lx + rx
+                self.target_BL = ly - lx - rx
+                self.target_BR = ly + lx + rx
 
     def publish_pwm(self):
         with self.lock:
@@ -71,10 +73,9 @@ class PS5Publisher(Node):
             msg.speed_bl = self.target_BL
             msg.speed_br = self.target_BR
         self.publisher_.publish(msg)
-        print(f"FL: {msg.speed_fl}, FR: {msg.speed_fr}, BL: {msg.speed_bl}, BR: {msg.speed_br}")
+        self.get_logger().info(f"FL: {msg.speed_fl}, FR: {msg.speed_fr}, BL: {msg.speed_bl}, BR: {msg.speed_br}")
 
 def main(args=None):
-    print("DEBUG: Entering main()")
     rclpy.init(args=args)
     node = PS5Publisher()
     rclpy.spin(node)
@@ -83,4 +84,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
