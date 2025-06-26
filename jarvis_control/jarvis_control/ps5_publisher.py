@@ -88,10 +88,10 @@ class PS5Publisher(Node):
     def publish_pwm(self):
         with self.lock:
             msg = MotorPwm()
-            msg.speed_fl = self.target_FL
-            msg.speed_fr = self.target_FR
-            msg.speed_bl = self.target_BL
-            msg.speed_br = self.target_BR
+            msg.fl = self.target_FL
+            msg.fr = self.target_FR
+            msg.bl = self.target_BL
+            msg.br = self.target_BR
         self.publisher_.publish(msg)
 
 def main(args=None):

@@ -48,10 +48,10 @@ class MotorController(Node):
         self.get_logger().info(f"Set {label.upper()} motor to {speed}")
 
     def motor_callback(self, msg):
-        self.set_motor('fl', msg.speed_fl)
-        self.set_motor('fr', msg.speed_fr)
-        self.set_motor('bl', msg.speed_bl)
-        self.set_motor('br', msg.speed_br)
+        self.set_motor('fl', msg.fl)
+        self.set_motor('fr', msg.fr)
+        self.set_motor('bl', msg.bl)
+        self.set_motor('br', msg.br)
 
 def main(args=None):
     rclpy.init(args=args)
