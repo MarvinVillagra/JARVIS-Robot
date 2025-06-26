@@ -27,6 +27,7 @@ setup(
             'ps5_publisher = jarvis_control.ps5_publisher:main',
             'motor_controller = jarvis_control.motor_controller:main',
             'camera_publisher = jarvis_control.camera_publisher:main',
+            'imu_publisher = jarvis_control.imu_publisher:main'
         ],
     },
 )
