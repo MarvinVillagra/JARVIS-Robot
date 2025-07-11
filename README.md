@@ -22,7 +22,7 @@ source ~/ros2_ws/install/setup.bash
 ros2 run robot_pwm_test motor_controller
 ros2 run robot_pwm_test ps5_publisher
 
-~/ros2_ws/start_jarvis.sh (currently working on it/not fuctional)
+~/ros2_ws/start_jarvis.sh
 
 ---
 
